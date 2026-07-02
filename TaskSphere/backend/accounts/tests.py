@@ -49,3 +49,44 @@ class RegistrationTests(APITestCase):
         response = self.client.post(self.register_url, self.valid_payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("email", response.data)
+
+class LoginTests(APITestCase):
+    def setUp(self):
+        self.login_url = reverse('login')
+        self.user = User.objects.create_user(
+            username="loginuser",
+            email="login@example.com",
+            password="testpassword123"
+        )
+        self.valid_payload = {
+            "username": "loginuser",
+            "password": "testpassword123"
+        }
+
+    def test_successful_login(self):
+        response = self.client.post(self.login_url, self.valid_payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("token", response.data)
+        self.assertEqual(response.data['username'], "loginuser")
+        self.assertEqual(response.data['email'], "login@example.com")
+
+    def test_invalid_password(self):
+        payload = self.valid_payload.copy()
+        payload['password'] = "wrongpassword"
+        response = self.client.post(self.login_url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("non_field_errors", response.data)
+
+    def test_non_existent_user(self):
+        payload = {
+            "username": "doesnotexist",
+            "password": "somepassword"
+        }
+        response = self.client.post(self.login_url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("non_field_errors", response.data)
+
+    def test_missing_credentials(self):
+        response = self.client.post(self.login_url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
