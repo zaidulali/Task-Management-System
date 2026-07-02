@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+from rest_framework.authtoken.models import Token
 
 class RegistrationTests(APITestCase):
     def setUp(self):
@@ -89,4 +90,25 @@ class LoginTests(APITestCase):
     def test_missing_credentials(self):
         response = self.client.post(self.login_url, {}, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+class LogoutTests(APITestCase):
+    def setUp(self):
+        self.logout_url = reverse('logout')
+        self.user = User.objects.create_user(
+            username="logoutuser",
+            email="logout@example.com",
+            password="testpassword123"
+        )
+        self.token = Token.objects.create(user=self.user)
+
+    def test_successful_logout(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+        response = self.client.post(self.logout_url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], "Successfully logged out.")
+        self.assertFalse(Token.objects.filter(key=self.token.key).exists())
+
+    def test_unauthenticated_logout(self):
+        response = self.client.post(self.logout_url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
