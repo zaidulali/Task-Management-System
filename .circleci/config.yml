@@ -1,0 +1,30 @@
+version: 2.1
+
+jobs:
+  build-backend:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: default
+      - run:
+          name: Build backend Docker image
+          command: docker build -t tasksphere-backend:latest ./TaskSphere/backend
+
+  build-frontend:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: default
+      - run:
+          name: Build frontend Docker image
+          command: docker build -t tasksphere-frontend:latest ./TaskSphere/frontend
+
+workflows:
+  build-workflow:
+    jobs:
+      - build-backend
+      - build-frontend
